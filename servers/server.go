@@ -1,6 +1,7 @@
 package servers
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net/http"
@@ -46,18 +47,24 @@ func RunServers(amount int) {
 
 func makeServers(sl *ServerList, wg sync.WaitGroup) {
 	defer wg.Done()
-
+	
 	r := mux.NewRouter()
 	port := sl.Pop()
-
-	
-	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		fmt.Fprintf(w, "Server%d", port)
-	})
 	server := http.Server {
 		Addr: fmt.Sprintf(":800%d", port),
 		Handler: r,
 	}
+	
+	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprintf(w, "Server %d", port)
+	})
+
+	r.HandleFunc("/shutdown", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(500)
+		w.Write([]byte("Server shutdown"))
+		server.Shutdown(context.Background())
+	})
+	
 	server.ListenAndServe()
 }
